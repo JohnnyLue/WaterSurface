@@ -218,7 +218,7 @@ void TrainView::draw()
 			GLfloat  texture_coordinate[] = {
 				0.0f, 0.0f,
 				1.0f, 0.0f,
-				0.5f, sqrt(3.0)/2, };
+				0.5f, sqrt(3.0) / 2, };
 			GLuint element[] = {
 				0, 1, 2,};
 
