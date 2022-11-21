@@ -94,12 +94,17 @@ class TrainView : public Fl_Gl_Window
 		ArcBallCam		arcball;			// keep an ArcBall for the UI
 		int				selectedCube = -1;  // simple - just remember which cube is selected
 
+		float eyex, eyey, eyez;
+
 		TrainWindow*	tw;				// The parent of this display window
 		CTrack*			m_pTrack;		// The track of the entire scene
 
 		Shader* shader		= nullptr;
+		Shader* skyboxShader		= nullptr;
 		Texture2D* texture	= nullptr;
+		TextureSkyBox* textureSky = nullptr;
 		VAO* plane			= nullptr;
+		VAO* skybox			= nullptr;
 		UBO* commom_matrices= nullptr;
 
 		//OpenAL

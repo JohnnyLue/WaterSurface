@@ -192,11 +192,11 @@ class ArcBallCam {
 		
 		float				panX;		// this keeps track of the panning - the current pan is 
 		float				panY;		
-
+public:
 		float				eyeX;		// in eyeX, eyeY, but this is the displacement for undoing the last
 		float				eyeY;		// addition
 		float				eyeZ;
-
+private:
 		float				initEyeZ;
 		float				fieldOfView; // View of field
 
