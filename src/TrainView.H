@@ -86,6 +86,10 @@ class TrainView : public Fl_Gl_Window
 
 		//set ubo
 		void setUBO();
+
+		float wave(int i, float x, float y);
+
+		float waveHeight(float x, float y);
 	public:
 		ArcBallCam		arcball;			// keep an ArcBall for the UI
 		int				selectedCube = -1;  // simple - just remember which cube is selected
@@ -106,5 +110,13 @@ class TrainView : public Fl_Gl_Window
 		ALuint source;
 		ALuint buffer;
 
+		const float pi = 3.14159;
+		float waterHeight;
+		float time;
+		int numWaves;
+		float amplitude[8];
+		float wavelength[8];
+		float speed[8];
+		float direction[8][2];
 
 };

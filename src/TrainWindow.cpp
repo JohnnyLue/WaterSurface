@@ -61,7 +61,7 @@ TrainWindow(const int x, const int y)
 		widgets->begin();
 
 		runButton = new Fl_Button(605,pty,60,20,"Run");
-		togglify(runButton);
+		togglify(runButton,1);
 
 		Fl_Button* fb = new Fl_Button(700,pty,25,20,"@>>");
 		fb->callback((Fl_Callback*)forwCB,this);
@@ -195,6 +195,7 @@ void TrainWindow::
 advanceTrain(float dir)
 //========================================================================
 {
+	trainView->time+=0.1;
 	//#####################################################################
 	// TODO: make this work for your train
 	//#####################################################################

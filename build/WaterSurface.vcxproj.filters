@@ -33,6 +33,8 @@
     <ClInclude Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\RenderUtilities\Texture.h">
       <Filter>RenderUtilities</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Header.h" />
+    <ClInclude Include="..\include\stb\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\CMakeLists.txt" />
@@ -48,6 +50,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\shaders\simple.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\shaders\skybox.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\shaders\skybox.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
