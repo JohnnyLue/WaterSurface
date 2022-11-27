@@ -408,6 +408,13 @@ void TrainView::draw()
 
 		//initiailize VAO, VBO, Shader...
 		
+		if (!this->pixelize)
+			this->pixelize = new
+			Shader(
+				PROJECT_DIR "/src/shaders/pixelize.vert",
+				nullptr, nullptr, nullptr,
+				PROJECT_DIR "/src/shaders/pixelize.frag");
+
 		if (!this->guiShader)
 			this->guiShader = new
 			Shader(
@@ -841,7 +848,41 @@ void TrainView::draw()
 	
 	fbos->unbindCurrentFrameBuffer();
 
+	WaterFrameBuffers* fbos2 = new WaterFrameBuffers();
+	fbos2->bindReflectionFrameBuffer();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	this->drawSence();
+	//###############################################################
+
+	//use water surface
+	this->shader->Use();
+
+	glm::mat4 model_matrix = glm::mat4();
+	model_matrix = glm::translate(model_matrix, this->source_pos);
+
+	this->shader->setMat4("u_model", model_matrix);
+
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
+	glUniform1i(glGetUniformLocation(this->shader->Program, "u_texture"), 0);
+
+	this->textureSky->bind(1);
+	glUniform1i(glGetUniformLocation(this->shader->Program, "skybox"), 1);
+
+	this->textureTile->bind(2);
+	glUniform1i(glGetUniformLocation(this->shader->Program, "dudv"), 2);
+
+	glBindVertexArray(plane->vao);
+
+	glDrawElements(GL_TRIANGLES, this->plane->element_amount, GL_UNSIGNED_INT, 0);
+
+
+	// Unbind VAO
+	glBindVertexArray(0);
+	//###############################################################
+
+	fbos2->unbindCurrentFrameBuffer();
 
 	//###############################################################
 	// plane
@@ -849,51 +890,38 @@ void TrainView::draw()
 	//bind shader
 	
 	//use gui
-	//this->guiShader->Use();
-	//GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
-	//VAO* gui = new VAO();
-	//glGenVertexArrays(1, &gui->vao);
-	//glGenBuffers(1, &gui->vbo[0]);
-	//glBindVertexArray(gui->vao);
-	//glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
-	//
-	//glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
-	//glUniform1i(glGetUniformLocation(fbos->getReflectionTexture(), "u_texture"), 0);
-	//
-	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	//glEnableVertexAttribArray(0);
-	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	this->pixelize->Use();
+	GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
+	VAO* gui = new VAO();
+	glGenVertexArrays(1, &gui->vao);
+	glGenBuffers(1, &gui->vbo[0]);
+	glBindVertexArray(gui->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
 
-	//use water surface
-	this->shader->Use();
-	
-	glm::mat4 model_matrix = glm::mat4();
-	model_matrix = glm::translate(model_matrix, this->source_pos);
-	
-	this->shader->setMat4("u_model", model_matrix);
+	pixelize->setInt("blockx", 15);
+	pixelize->setInt("blocky", 10);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
-	glUniform1i(glGetUniformLocation(this->shader->Program,"u_texture"), 0);
+	glBindTexture(GL_TEXTURE_2D, fbos2->getReflectionTexture());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	this->textureSky->bind(1);
-	glUniform1i(glGetUniformLocation(this->shader->Program, "skybox"), 1);
-
-	this->textureTile->bind(2);
-	glUniform1i(glGetUniformLocation(this->shader->Program, "dudv"), 2);
+	glUniform1i(glGetUniformLocation(this->pixelize->Program, "Texture"), 0);
 	
-	glBindVertexArray(plane->vao);
-	
-	glDrawElements(GL_TRIANGLES, this->plane->element_amount, GL_UNSIGNED_INT, 0);
-	
-
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	// Unbind VAO
 	glBindVertexArray(0);
 	//###############################################################
+	glUseProgram(0);
+	
 	fbos->cleanUp();
 	delete fbos;
-	//unbind shader(switch to fixed pipeline)
+
+	fbos2->cleanUp();
+	delete fbos2;
 
 	glDeleteVertexArrays(1, &plane->vao);
 	glDeleteBuffers(3, plane->vbo);
@@ -909,6 +937,9 @@ void TrainView::draw()
 	delete skybox;
 
 	glDeleteBuffers(1, &commom_matrices->ubo);
+
+	
+
 
 	glUseProgram(0);
 }

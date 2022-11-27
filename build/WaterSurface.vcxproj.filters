@@ -69,6 +69,12 @@
     <None Include="..\src\shaders\gui.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\src\shaders\pixelize.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\src\shaders\pixelize.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="RenderUtilities">

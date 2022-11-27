@@ -315,6 +315,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <None Include="..\src\shaders\gui.frag" />
     <None Include="..\src\shaders\gui.vert" />
+    <None Include="..\src\shaders\pixelize.frag" />
+    <None Include="..\src\shaders\pixelize.vert" />
     <None Include="..\src\shaders\skybox.frag" />
     <None Include="..\src\shaders\skybox.vert" />
     <None Include="..\src\shaders\tile.frag" />
