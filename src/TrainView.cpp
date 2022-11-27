@@ -910,7 +910,6 @@ void TrainView::draw()
 
 	glDeleteBuffers(1, &commom_matrices->ubo);
 
-
 	glUseProgram(0);
 }
 
