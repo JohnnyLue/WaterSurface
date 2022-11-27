@@ -35,11 +35,11 @@
 #include <glm/gtx/transform.hpp>
 #include <GL/glu.h>
 #include <cmath>
+#include <time.h>
 
 #include "TrainView.H"
 #include "TrainWindow.H"
 #include "Utilities/3DUtils.H"
-#include "Header.h"
 
 
 
@@ -61,31 +61,33 @@ TrainView(int x, int y, int w, int h, const char* l)
 
 	resetArcball();
 
-	 waterHeight=5;
-	 time=0;
-	 numWaves=3;
-	 amplitude[0] = 0.2;
-	 amplitude[1] = 0.3;
-	 amplitude[2] = 0.3;
-	 wavelength[0] = 20;
-	 wavelength[1] = 36;
-	 wavelength[2] = 41;
-	 speed[0] = 5;
-	 speed[1] = 3;
-	 speed[2] = 3.8;
-	 Pnt3f dir1(0, -1.0, 1.0);
-	 Pnt3f dir2(0.0, 1.0, 0.0);
-	 Pnt3f dir3(1.0, -1.0, 0.0);
-	 dir1.normalize();
-	 dir2.normalize();
-	 dir3.normalize();
-	 direction[0][0] = dir1.x;
-	 direction[0][1] = dir1.y;
-	 direction[1][0] = dir2.x;
-	 direction[1][1] = dir2.y;
-	 direction[2][0] = dir3.x;
-	 direction[2][1] = dir3.y;
-	 
+	waterHeight=5;
+	time=0;
+	numWaves=0;
+	amplitude[0] = 0.2;
+	amplitude[1] = 0.3;
+	amplitude[2] = 0.3;
+	wavelength[0] = 20;
+	wavelength[1] = 36;
+	wavelength[2] = 41;
+	speed[0] = 5;
+	speed[1] = 3;
+	speed[2] = 3.8;
+	Pnt3f dir1(0, -1.0, 1.0);
+	Pnt3f dir2(0.0, 1.0, 0.0);
+	Pnt3f dir3(1.0, -1.0, 0.0);
+	dir1.normalize();
+	dir2.normalize();
+	dir3.normalize();
+	direction[0][0] = dir1.x;
+	direction[0][1] = dir1.y;
+	direction[1][0] = dir2.x;
+	direction[1][1] = dir2.y;
+	direction[2][0] = dir3.x;
+	direction[2][1] = dir3.y;
+
+	srand(std::time(0));
+	memset(heightMap, 0, 100 * 100* sizeof(float));
 }
 
 //************************************************************************
@@ -214,6 +216,139 @@ float TrainView::waveHeight(float x, float y) {
 		height += wave(i, x, y);
 	return height;
 }
+void TrainView::drawSence()
+{
+	//###############################################################
+	// pool
+	// 
+	//bind shader
+
+	glm::mat4 model_matrix_pool = glm::mat4();
+	model_matrix_pool = glm::translate(model_matrix_pool, this->source_pos);
+	model_matrix_pool = glm::scale(model_matrix_pool, glm::vec3(100.0f, 100.0f, 100.0f));
+	model_matrix_pool = glm::translate(model_matrix_pool, glm::vec3(0, -0.35, 0));
+	this->tileShader->Use();
+	this->tileShader->setMat4("u_model", model_matrix_pool);
+
+	this->textureTile->bind(0);
+	glUniform1i(glGetUniformLocation(this->tileShader->Program, "u_texture"), 0);
+
+	//bind VAO
+	glBindVertexArray(this->pool->vao);
+
+	glDrawArrays(GL_TRIANGLES, 0, 30);
+	//unbind VAO
+	glBindVertexArray(0);
+	//###############################################################
+
+	//###############################################################
+	// skybox
+	// 
+	// draw skybox as last
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+	
+	//bind shader
+	this->skyboxShader->Use();
+	this->textureSky->bind(0);
+	glUniform1i(glGetUniformLocation(this->skyboxShader->Program, "skybox"), 0);
+
+	// skybox cube
+	glBindVertexArray(this->skybox->vao);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+	glDepthFunc(GL_LESS); // set depth function back to default
+	glDepthMask(GL_TRUE);
+
+	//###############################################################
+
+	//###############################################################
+	// plane
+	// 
+	//bind shader
+	//this->shader->Use();
+	//
+	//glm::mat4 model_matrix = glm::mat4();
+	//model_matrix = glm::translate(model_matrix, this->source_pos);
+	//
+	//this->shader->setMat4("u_model", model_matrix);
+	//
+	//this->texture->bind(0, "u_texture");
+	//
+	////bind VAO
+	//glBindVertexArray(this->plane->vao);
+	//
+	//glDrawElements(GL_TRIANGLES, this->plane->element_amount, GL_UNSIGNED_INT, 0);
+	//
+	////unbind VAO
+	//glBindVertexArray(0);
+	//###############################################################
+}
+void TrainView::updateHeightMap()
+{
+	srand(rand()+5);
+	static int lasttime = -1;
+	if (autoGenerateWaves && (lasttime<0|| std::clock()-lasttime>waveTimeBreak)&&sources.size()< maxSources)
+	{
+		lasttime = std::clock();
+		int x = rand() % 100;
+		int y = rand() % 100;
+		//heightMap[y * 100 + x]+=1.0;
+		sources.push_back(new waveSource(x, y, waveHeigh));
+	}
+	if(!sources.empty())
+	for (auto iter = sources.begin(); iter != sources.end(); iter++)
+	{
+		(*iter)->update(waveSpeed);
+		if ((*iter)->dies())
+		{
+			delete (*iter);
+			iter = sources.erase(iter);
+
+			if (iter == sources.begin())
+				break;
+			else
+				iter--;
+		}
+
+	}
+	float newHeight[100 * 100];
+	memset(newHeight, 0, 100 * 100 * sizeof(float));
+	for (int i = 0; i < 100; i++)
+	{
+		for (int j = 0; j < 100; j++)
+		{
+			for (auto iter = sources.begin(); iter != sources.end(); iter++)
+				newHeight[i * 100 + j] += (*iter)->getHeight(i, j);
+		}
+	}
+
+	float moreMewHeight[100 * 100];
+	memset(moreMewHeight, 0, 100 * 100 * sizeof(float));
+
+	for (int i = 0; i < 100; i++)
+	{
+		for (int j = 0; j < 100; j++)
+		{
+			for (int x = -1; x < 1; x++)
+			{
+				for (int y = -1; y < 1; y++)
+				{
+					int posx = i + x, posy = j + y;
+					if (posx < 0)posx *= -1;
+					if (posx >= 100)posx -= 2 * (posx - 100) + 1;
+					if (posy < 0)posy *= -1;
+					if (posy >= 100)posy -= 2 * (posy - 100) + 1;
+
+					moreMewHeight[i * 100 + j] += newHeight[posx * 100 + posy]/9.0;
+
+				}
+			}
+		}
+	}
+
+	memcpy(heightMap, moreMewHeight, 100 * 100*sizeof(float));
+}
 //************************************************************************
 //
 // * this is the code that actually draws the window
@@ -273,6 +408,13 @@ void TrainView::draw()
 
 		//initiailize VAO, VBO, Shader...
 		
+		if (!this->guiShader)
+			this->guiShader = new
+			Shader(
+				PROJECT_DIR "/src/shaders/gui.vert",
+				nullptr, nullptr, nullptr,
+				PROJECT_DIR "/src/shaders/gui.frag");
+
 		if(!this->skyboxShader)
 			this->skyboxShader = new
 			Shader(
@@ -286,14 +428,21 @@ void TrainView::draw()
 				PROJECT_DIR "/src/shaders/simple.vert",
 				nullptr, nullptr, nullptr, 
 				PROJECT_DIR "/src/shaders/simple.frag");
+		
+		if (!this->tileShader)
+			this->tileShader = new
+			Shader(
+				PROJECT_DIR "/src/shaders/tile.vert",
+				nullptr, nullptr, nullptr,
+				PROJECT_DIR "/src/shaders/tile.frag");
 
 		if (!this->commom_matrices)
 			this->commom_matrices = new UBO();
-			this->commom_matrices->size = 2 * sizeof(glm::mat4);
-			glGenBuffers(1, &this->commom_matrices->ubo);
-			glBindBuffer(GL_UNIFORM_BUFFER, this->commom_matrices->ubo);
-			glBufferData(GL_UNIFORM_BUFFER, this->commom_matrices->size, NULL, GL_STATIC_DRAW);
-			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		this->commom_matrices->size = 2 * sizeof(glm::mat4);
+		glGenBuffers(1, &this->commom_matrices->ubo);
+		glBindBuffer(GL_UNIFORM_BUFFER, this->commom_matrices->ubo);
+		glBufferData(GL_UNIFORM_BUFFER, this->commom_matrices->size, NULL, GL_STATIC_DRAW);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
 		//set water surface
@@ -303,6 +452,7 @@ void TrainView::draw()
 		GLfloat  texture_coordinate[10000 * 2];
 		GLuint element[99 * 99 * 2 * 3];
 
+		
 		float t = time;
 		for (int i = 0; i < 100; i++)
 		{
@@ -310,7 +460,7 @@ void TrainView::draw()
 			{
 				float posx = i - 50, posy = 1, posz = j - 50;
 				vertices[(i * 100 + j)*3 + 0] = posx;
-				vertices[(i * 100 + j) * 3 + 1] = 3+waveHeight(i, j);
+				vertices[(i * 100 + j) * 3 + 1] = 3+this->heightMap[i*100+j];
 				vertices[(i * 100 + j)*3 + 2] = posz;
 
 				texture_coordinate[(i * 100 + j)*2 + 0] = (i) / 100.0;
@@ -414,6 +564,65 @@ void TrainView::draw()
 		// Unbind VAO
 		glBindVertexArray(0);
 	
+
+		GLfloat poolVertex[] = {
+			// positions		  //normal  // texture Coords
+			-0.5f, -0.5f, -0.5f,  0,0,1,    0.0f, 0.0f,
+			 0.5f, -0.5f, -0.5f,  0,0,1,    1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  0,0,1,    1.0f, 1.0f,
+			 0.5f,  0.5f, -0.5f,  0,0,1,    1.0f, 1.0f,
+			-0.5f,  0.5f, -0.5f,  0,0,1,    0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0,0,1,    0.0f, 0.0f,
+
+			-0.5f, -0.5f,  0.5f,  0,0,-1,   0.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  0,0,-1,   1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  0,0,-1,   1.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  0,0,-1,   1.0f, 1.0f,
+			-0.5f,  0.5f,  0.5f,  0,0,-1,   0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f,  0,0,-1,   0.0f, 0.0f,
+
+			-0.5f,  0.5f,  0.5f,  1,0,0,    1.0f, 0.0f,
+			-0.5f,  0.5f, -0.5f,  1,0,0,    1.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  1,0,0,    0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  1,0,0,    0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f,  1,0,0,    0.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  1,0,0,    1.0f, 0.0f,
+
+			 0.5f,  0.5f,  0.5f,  -1,0,0,   1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  -1,0,0,   1.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  -1,0,0,   0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  -1,0,0,   0.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  -1,0,0,   0.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  -1,0,0,   1.0f, 0.0f,
+
+			-0.5f, -0.5f, -0.5f,  0,1,0,    0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  0,1,0,    1.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  0,1,0,    1.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  0,1,0,    1.0f, 0.0f,
+			-0.5f, -0.5f,  0.5f,  0,1,0,    0.0f, 0.0f,
+			-0.5f, -0.5f, -0.5f,  0,1,0,    0.0f, 1.0f,
+		};
+
+		// pool VAO
+		this->pool = new VAO();
+		glGenVertexArrays(1, &pool->vao);
+		glGenBuffers(1, &pool->vbo[0]);
+		glBindVertexArray(pool->vao);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, pool->vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(poolVertex), &poolVertex, GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+		// Unbind VAO
+		glBindVertexArray(0);
+
 		
 		float skyboxVertices[] = {
 			// positions          
@@ -473,9 +682,14 @@ void TrainView::draw()
 		// Unbind VAO
 		glBindVertexArray(0);
 		
+		if (!this->DUDVmap)
+			this->DUDVmap = new Texture2D(PROJECT_DIR "/Images/dudv.jpg");
 		
 		if (!this->texture)
 			this->texture = new Texture2D(PROJECT_DIR "/Images/water.jpg");
+
+		if (!this->textureTile)
+			this->textureTile = new Texture2D(PROJECT_DIR "/Images/pool tile.jpg");
 		
 		if (!this->textureSky)
 		{
@@ -592,7 +806,7 @@ void TrainView::draw()
 	// now draw the ground plane
 	//*********************************************************************
 	// set to opengl fixed pipeline(use opengl 1.x draw function)
-	glUseProgram(0);
+	//glUseProgram(0);
 	//setupFloor();
 	//glDisable(GL_LIGHTING);
 	//drawFloor(200,10);
@@ -617,51 +831,86 @@ void TrainView::draw()
 	setUBO();
 	glBindBufferRange(
 		GL_UNIFORM_BUFFER, /*binding point*/0, this->commom_matrices->ubo, 0, this->commom_matrices->size);
+	
+	WaterFrameBuffers* fbos = new WaterFrameBuffers();
+	fbos->bindReflectionFrameBuffer();
 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	this->drawSence();
+	
+	fbos->unbindCurrentFrameBuffer();
+
+	this->drawSence();
+
+	//###############################################################
+	// plane
+	// 
 	//bind shader
-	this->shader->Use(); 
+	
+	//use gui
+	//this->guiShader->Use();
+	//GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
+	//VAO* gui = new VAO();
+	//glGenVertexArrays(1, &gui->vao);
+	//glGenBuffers(1, &gui->vbo[0]);
+	//glBindVertexArray(gui->vao);
+	//glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+	//
+	//glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
+	//glUniform1i(glGetUniformLocation(fbos->getReflectionTexture(), "u_texture"), 0);
+	//
+	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+	//use water surface
+	this->shader->Use();
+	
 	glm::mat4 model_matrix = glm::mat4();
 	model_matrix = glm::translate(model_matrix, this->source_pos);
-	glUniformMatrix4fv(
-		glGetUniformLocation(this->shader->Program, "u_model"), 1, GL_FALSE, &model_matrix[0][0]);
-	glUniform3fv(
-		glGetUniformLocation(this->shader->Program, "u_color"), 
-		1, 
-		&glm::vec3(0.0f, 1.0f, 0.0f)[0]);
-	this->texture->bind(0);
-	glUniform1i(glGetUniformLocation(this->shader->Program, "u_texture"), 0);
+	
+	this->shader->setMat4("u_model", model_matrix);
+
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
+	glUniform1i(glGetUniformLocation(this->shader->Program,"u_texture"), 0);
 
 	this->textureSky->bind(1);
 	glUniform1i(glGetUniformLocation(this->shader->Program, "skybox"), 1);
 
-	glm::vec3 pos(arcball.eyeX, arcball.eyeY, arcball.eyeZ);
-	glUniform3fv(glGetUniformLocation(this->shader->Program, "eyePos"),1, &pos[0]);
-	//bind VAO
-	glBindVertexArray(this->plane->vao);
+	this->textureTile->bind(2);
+	glUniform1i(glGetUniformLocation(this->shader->Program, "dudv"), 2);
+	
+	glBindVertexArray(plane->vao);
 	
 	glDrawElements(GL_TRIANGLES, this->plane->element_amount, GL_UNSIGNED_INT, 0);
-
-	//unbind VAO
-	glBindVertexArray(0);
 	
 
-	// draw skybox as last
-	glDepthMask(GL_FALSE);
-	glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-	
-	
-	//bind shader
-	this->skyboxShader->Use();
-	this->textureSky->bind(0);
-	glUniform1i(glGetUniformLocation(this->skyboxShader->Program, "skybox"), 0);
-	// skybox cube
-	glBindVertexArray(this->skybox->vao);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	// Unbind VAO
 	glBindVertexArray(0);
-	glDepthFunc(GL_LESS); // set depth function back to default
-	glDepthMask(GL_TRUE);
+	//###############################################################
+	fbos->cleanUp();
+	delete fbos;
 	//unbind shader(switch to fixed pipeline)
+
+	glDeleteVertexArrays(1, &plane->vao);
+	glDeleteBuffers(3, plane->vbo);
+	glDeleteBuffers(1, &plane->ebo);
+	delete plane;
+
+	glDeleteVertexArrays(1, &pool->vao);
+	glDeleteBuffers(1, pool->vbo);
+	delete pool;
+
+	glDeleteVertexArrays(1, &skybox->vao);
+	glDeleteBuffers(1, skybox->vbo);
+	delete skybox;
+
+	glDeleteBuffers(1, &commom_matrices->ubo);
+
+
 	glUseProgram(0);
 }
 

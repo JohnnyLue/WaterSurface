@@ -29,7 +29,7 @@
 #include "RenderUtilities/BufferObject.h"
 #include "RenderUtilities/Shader.h"
 #include "RenderUtilities/Texture.h"
-
+#include "WaterFrameBuffers.h"
 // Preclarify for preventing the compiler error
 class TrainWindow;
 class CTrack;
@@ -59,6 +59,36 @@ class CTrack;
 // this uses the old ArcBall Code
 #include "Utilities/ArcBallCam.H"
 
+class waveSource {
+	int x, y;
+	float hei;
+	int distance;
+public:
+	waveSource(int x, int y, float hei) :x(x), y(y), hei(hei)
+	{
+		distance = 0;
+	}
+
+	float getHeight(int px, int py) {
+		int dis = (x - px) * (x - px) + (y - py) * (y - py);
+		if (abs(dis - distance * distance) < 20) {
+			return hei * (20 - abs(dis - distance * distance));
+		}
+		else
+			return 0.0;
+	}
+
+	void update(int waveSpeed)
+	{
+		hei *= 0.9;
+		distance += waveSpeed;
+	}
+
+	bool dies()
+	{
+		return hei < 0.0001;
+	}
+};
 class TrainView : public Fl_Gl_Window
 {
 	public:
@@ -90,6 +120,10 @@ class TrainView : public Fl_Gl_Window
 		float wave(int i, float x, float y);
 
 		float waveHeight(float x, float y);
+
+		void drawSence();
+
+		void updateHeightMap();
 	public:
 		ArcBallCam		arcball;			// keep an ArcBall for the UI
 		int				selectedCube = -1;  // simple - just remember which cube is selected
@@ -99,11 +133,18 @@ class TrainView : public Fl_Gl_Window
 		TrainWindow*	tw;				// The parent of this display window
 		CTrack*			m_pTrack;		// The track of the entire scene
 
-		Shader* shader		= nullptr;
-		Shader* skyboxShader		= nullptr;
-		Texture2D* texture	= nullptr;
-		TextureSkyBox* textureSky = nullptr;
+		Shader* shader			= nullptr;
+		Shader* tileShader		= nullptr;
+		Shader* skyboxShader	= nullptr;
+		Shader* guiShader		= nullptr;
+
+		Texture2D* texture			= nullptr;
+		Texture2D* textureTile		= nullptr;
+		TextureSkyBox* textureSky	= nullptr;
+		Texture2D* DUDVmap			= nullptr;
+
 		VAO* plane			= nullptr;
+		VAO* pool			= nullptr;
 		VAO* skybox			= nullptr;
 		UBO* commom_matrices= nullptr;
 
@@ -124,4 +165,13 @@ class TrainView : public Fl_Gl_Window
 		float speed[8];
 		float direction[8][2];
 
+		float heightMap[100 * 100];
+		std::vector <waveSource*> sources;
+
+		//control waves
+		int maxSources = 30;
+		bool autoGenerateWaves = true;
+		float waveHeigh =0.3;
+		int waveSpeed = 2;
+		int waveTimeBreak = 300;
 };

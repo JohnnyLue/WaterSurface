@@ -313,8 +313,12 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\src\shaders\gui.frag" />
+    <None Include="..\src\shaders\gui.vert" />
     <None Include="..\src\shaders\skybox.frag" />
     <None Include="..\src\shaders\skybox.vert" />
+    <None Include="..\src\shaders\tile.frag" />
+    <None Include="..\src\shaders\tile.vert" />
     <None Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\CallBacks.H">
     </None>
     <None Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\ControlPoint.H">
@@ -337,7 +341,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </None>
     <None Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\shaders\simple.frag">
     </None>
-    <ClInclude Include="..\src\Header.h" />
+    <ClInclude Include="..\src\WaterFrameBuffers.h" />
     <ClInclude Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\RenderUtilities\BufferObject.h" />
     <ClInclude Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\RenderUtilities\Shader.h" />
     <ClInclude Include="C:\Users\88698\Desktop\Computer Graphics\p4\WaterSurface-master\src\RenderUtilities\Texture.h" />
