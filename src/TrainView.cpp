@@ -330,9 +330,9 @@ void TrainView::updateHeightMap()
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			for (int x = -1; x < 1; x++)
+			for (int x = -2; x < 2; x++)
 			{
-				for (int y = -1; y < 1; y++)
+				for (int y = -2; y < 2; y++)
 				{
 					int posx = i + x, posy = j + y;
 					if (posx < 0)posx *= -1;
@@ -340,7 +340,7 @@ void TrainView::updateHeightMap()
 					if (posy < 0)posy *= -1;
 					if (posy >= 100)posy -= 2 * (posy - 100) + 1;
 
-					moreMewHeight[i * 100 + j] += newHeight[posx * 100 + posy]/9.0;
+					moreMewHeight[i * 100 + j] += newHeight[posx * 100 + posy]/25.0;
 
 				}
 			}

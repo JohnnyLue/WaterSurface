@@ -86,7 +86,7 @@ public:
 
 	bool dies()
 	{
-		return hei < 0.0001;
+		return hei < 0.001;
 	}
 };
 class TrainView : public Fl_Gl_Window
@@ -169,7 +169,7 @@ class TrainView : public Fl_Gl_Window
 		std::vector <waveSource*> sources;
 
 		//control waves
-		int maxSources = 30;
+		int maxSources = 10;
 		bool autoGenerateWaves = true;
 		float waveHeigh =0.3;
 		int waveSpeed = 2;
