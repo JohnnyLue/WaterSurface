@@ -899,7 +899,7 @@ void TrainView::draw()
 	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
 
-	pixelize->setInt("blockx", 15);
+	pixelize->setInt("blockx", 10);
 	pixelize->setInt("blocky", 10);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
