@@ -133,6 +133,7 @@ int TrainView::handle(int event)
 			if (last_push == FL_LEFT_MOUSE  ) {
 				doPick();
 				damage(1);
+				onDrag = true;
 				return 1;
 			};
 			break;
@@ -141,11 +142,15 @@ int TrainView::handle(int event)
 		case FL_RELEASE: // button release
 			damage(1);
 			last_push = 0;
+			onDrag = false;
 			return 1;
 
 		// Mouse button drag event
 		case FL_DRAG:
-
+			if (last_push == FL_LEFT_MOUSE)
+			{
+				onDrag = true;
+			}
 			// Compute the new control point position
 			if ((last_push == FL_LEFT_MOUSE) && (selectedCube >= 0)) {
 				ControlPoint* cp = &m_pTrack->points[selectedCube];
@@ -284,45 +289,9 @@ void TrainView::drawSence()
 	//glBindVertexArray(0);
 	//###############################################################
 }
-void TrainView::updateHeightMap()
+
+void TrainView::averageHeight(float* heightMap)
 {
-	srand(rand()+5);
-	static int lasttime = -1;
-	if (autoGenerateWaves && (lasttime<0|| std::clock()-lasttime>waveTimeBreak)&&sources.size()< maxSources)
-	{
-		lasttime = std::clock();
-		int x = rand() % 100;
-		int y = rand() % 100;
-		//heightMap[y * 100 + x]+=1.0;
-		sources.push_back(new waveSource(x, y, waveHeigh));
-	}
-	if(!sources.empty())
-	for (auto iter = sources.begin(); iter != sources.end(); iter++)
-	{
-		(*iter)->update(waveSpeed);
-		if ((*iter)->dies())
-		{
-			delete (*iter);
-			iter = sources.erase(iter);
-
-			if (iter == sources.begin())
-				break;
-			else
-				iter--;
-		}
-
-	}
-	float newHeight[100 * 100];
-	memset(newHeight, 0, 100 * 100 * sizeof(float));
-	for (int i = 0; i < 100; i++)
-	{
-		for (int j = 0; j < 100; j++)
-		{
-			for (auto iter = sources.begin(); iter != sources.end(); iter++)
-				newHeight[i * 100 + j] += (*iter)->getHeight(i, j);
-		}
-	}
-
 	float moreMewHeight[100 * 100];
 	memset(moreMewHeight, 0, 100 * 100 * sizeof(float));
 
@@ -330,9 +299,9 @@ void TrainView::updateHeightMap()
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			for (int x = -2; x < 2; x++)
+			for (int x = -2; x <= 2; x++)
 			{
-				for (int y = -2; y < 2; y++)
+				for (int y = -2; y <= 2; y++)
 				{
 					int posx = i + x, posy = j + y;
 					if (posx < 0)posx *= -1;
@@ -340,14 +309,86 @@ void TrainView::updateHeightMap()
 					if (posy < 0)posy *= -1;
 					if (posy >= 100)posy -= 2 * (posy - 100) + 1;
 
-					moreMewHeight[i * 100 + j] += newHeight[posx * 100 + posy]/25.0;
-
+					moreMewHeight[i * 100 + j] += heightMap[posx * 100 + posy] / 25.0;
 				}
 			}
 		}
 	}
 
 	memcpy(heightMap, moreMewHeight, 100 * 100*sizeof(float));
+}
+
+void TrainView::addSource(int x, int y, float height)
+{
+	for (int i = 0; i < 100; i++)
+		if (!sources[i].inUse)
+		{
+			sources[i].set(x, y, height);
+			return;
+		}
+
+	return;
+}
+
+void TrainView::updateHeightMap()
+{
+
+	//generate new wave if auto generate is on
+	srand(rand()+5);
+	static int lasttime1 = -1;
+	static int lasttime2 = -1;
+
+	if (autoGenerateWaves && (lasttime1<0|| std::clock()-lasttime1>waveTimeBreak))
+	{
+		lasttime1 = std::clock();
+		int x = rand() % 100;
+		int y = rand() % 100;
+		//heightMap[y * 100 + x]+=1.0;
+		addSource(x, y, waveHeigh);
+	}
+	if (interactive && onDrag && (lasttime2<0 || std::clock() - lasttime2>100))
+	{
+		lasttime2 = std::clock();
+
+		double r1x, r1y, r1z, r2x, r2y, r2z;
+		getMouseLine(r1x, r1y, r1z, r2x, r2y, r2z);
+
+		double pointx, pointy, pointz;
+		mousePoleGo(r1x, r1y, r1z, r2x, r2y, r2z, 0, 0, 0, pointx, pointy, pointz, false);
+
+		if (pointx + 50 > 0 && pointx + 50 < 100 && pointz + 50 > 0 && pointz + 50 < 100)
+			addSource(pointx + 50, pointz + 50, waveHeigh);
+	}
+
+	//clear up disappeared waves
+	for (int i=0;i<100;i++)
+	{
+		sources[i].update(waveSpeed);
+	}
+
+
+	//generate new height map
+	float newHeight[100 * 100];
+	memset(newHeight, 0, 100 * 100 * sizeof(float));
+	for (int i = 0; i < 100; i++)
+	{
+		for (int j = 0; j < 100; j++)
+		{
+			for (int k = 0; k < 100; k++)
+			{
+				if(sources[k].inUse)
+					newHeight[i * 100 + j] += sources[k].getHeight(i, j);
+			}
+		}
+	}
+
+	//5*5 average do 5 times
+	for(int i=0;i<5;i++)
+		averageHeight(&(newHeight[0]));
+
+
+	memcpy(heightMap, newHeight, 100 * 100 * sizeof(float));
+
 }
 //************************************************************************
 //

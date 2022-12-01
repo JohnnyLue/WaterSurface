@@ -63,32 +63,62 @@ class waveSource {
 	int x, y;
 	float hei;
 	int distance;
+	
 public:
-	waveSource(int x, int y, float hei) :x(x), y(y), hei(hei)
-	{
-		distance = 0;
+	bool inUse;
+	waveSource() {
+		inUse = false;
 	}
 
 	float getHeight(int px, int py) {
+		float totalHeight=0;
 		int dis = (x - px) * (x - px) + (y - py) * (y - py);
 		if (abs(dis - distance * distance) < 20) {
-			return hei * (20 - abs(dis - distance * distance));
+			totalHeight+= hei * (20 - abs(dis - distance * distance));
 		}
-		else
-			return 0.0;
+		 dis = (-x - px) * (-x - px) + (y - py) * (y - py);
+		if (abs(dis - distance * distance) < 20) {
+			totalHeight += hei * (20 - abs(dis - distance * distance));
+		}
+		 dis = (x - px) * (x - px) + (-y - py) * (-y - py);
+		if (abs(dis - distance * distance) < 20) {
+			totalHeight += hei * (20 - abs(dis - distance * distance));
+		}
+		 dis = (99 * 2 - x - px) * (99 * 2 - x - px) + (y - py) * (y - py);
+		if (abs(dis - distance * distance) < 20) {
+			totalHeight += hei * (20 - abs(dis - distance * distance));
+		}
+		 dis = (x - px) * (x - px) + (99 * 2 - y - py) * (99 * 2 - y - py);
+		if (abs(dis - distance * distance) < 20) {
+			totalHeight += hei * (20 - abs(dis - distance * distance));
+		}
+
+		return totalHeight;
 	}
 
 	void update(int waveSpeed)
 	{
+		if (dies())
+			return;
 		hei *= 0.9;
 		distance += waveSpeed;
 	}
 
 	bool dies()
 	{
-		return hei < 0.001;
+		if(abs(hei) < .005)
+			inUse = false;
+		return abs(hei) < .005;
+	}
+
+	void set(int x, int y, float hei)
+	{
+		inUse = true;
+		this->x = x, this->y = y, this->hei = hei;
+		distance = 0;
 	}
 };
+
 class TrainView : public Fl_Gl_Window
 {
 	public:
@@ -124,6 +154,10 @@ class TrainView : public Fl_Gl_Window
 		void drawSence();
 
 		void updateHeightMap();
+
+		void averageHeight(float* heightMap);
+		
+		void addSource(int x, int y, float height);
 	public:
 		ArcBallCam		arcball;			// keep an ArcBall for the UI
 		int				selectedCube = -1;  // simple - just remember which cube is selected
@@ -164,14 +198,16 @@ class TrainView : public Fl_Gl_Window
 		float wavelength[8];
 		float speed[8];
 		float direction[8][2];
-
-		float heightMap[100 * 100];
-		std::vector <waveSource*> sources;
-
+		
 		//control waves
-		int maxSources = 10;
-		bool autoGenerateWaves = true;
-		float waveHeigh =0.3;
-		int waveSpeed = 2;
+		bool autoGenerateWaves = false;
+		bool interactive = true;
+		bool onDrag = false;
+		float waveHeigh = .3;
+		int waveSpeed = 3;
 		int waveTimeBreak = 300;
+		float heightMap[100 * 100];
+
+		waveSource sources[100];
+
 };
