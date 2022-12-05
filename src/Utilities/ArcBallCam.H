@@ -51,6 +51,7 @@
 #pragma once
 
 #include "3DUtils.H"
+#include <iostream>
 
 //***************************************************************************
 //
@@ -172,7 +173,8 @@ class ArcBallCam {
 		// assume the window does it
 		void getMouseNDC(float& x, float& y);
 
-	private:
+
+	public:
 		// This keeps track of the rotation - the current rotation is
 		// start*now
 		Quat				start;	// orientation at the start of drag
@@ -196,8 +198,9 @@ public:
 		float				eyeX;		// in eyeX, eyeY, but this is the displacement for undoing the last
 		float				eyeY;		// addition
 		float				eyeZ;
-private:
+
 		float				initEyeZ;
+private:
 		float				fieldOfView; // View of field
 
 

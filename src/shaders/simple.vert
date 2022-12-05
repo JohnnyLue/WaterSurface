@@ -19,15 +19,17 @@ out V_OUT
    vec4 clipSpace;
 } v_out;
 
+
 void main()
 {
    
-    v_out.clipSpace= u_projection * u_view * u_model * vec4(position, 1.0f);
+
+    v_out.clipSpace= u_projection * u_view *u_model * vec4(position, 1.0f);
     gl_Position = v_out.clipSpace;
-    vec3 oriPos = vec3(position.x,3,position.z);
+    vec3 oriPos = vec3(position.x,0,position.z);
     vec4 origlPos = vec4(u_projection * u_view * u_model * vec4(oriPos, 1.0f));
     vec4 texpos = origlPos/(2*origlPos.z)+vec4(0.5,0.5,0,0);
-    v_out.position = vec3(u_model * vec4(position, 1.0f));
+    v_out.position = vec3( u_model*vec4(position, 1.0f));
     v_out.normal = mat3(transpose(inverse(u_model))) * normal;
     v_out.texture_coordinate = vec2(position.x/2.0+0.5,position.y/2.0+0.5)*6.0;
 }

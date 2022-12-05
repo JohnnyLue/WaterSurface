@@ -63,9 +63,9 @@ TrainView(int x, int y, int w, int h, const char* l)
 
 	waterHeight=5;
 	time=0;
-	numWaves=0;
-	amplitude[0] = 0.2;
-	amplitude[1] = 0.3;
+	numWaves=3;
+	amplitude[0] = 0.4;
+	amplitude[1] = 0.6;
 	amplitude[2] = 0.3;
 	wavelength[0] = 20;
 	wavelength[1] = 36;
@@ -101,7 +101,7 @@ resetArcball()
 	// Set up the camera to look at the world
 	// these parameters might seem magical, and they kindof are
 	// a little trial and error goes a long way
-	arcball.setup(this, 40, 250, .2f, .4f, 0);
+	arcball.setup(this, 40, 250, .4f, .2f, 0);
 }
 
 //************************************************************************
@@ -118,7 +118,7 @@ int TrainView::handle(int event)
 	// see if the ArcBall will handle the event - if it does, 
 	// then we're done
 	// note: the arcball only gets the event if we're in world view
-	if (tw->worldCam->value())
+	
 		if (arcball.handle(event)) 
 			return 1;
 
@@ -221,7 +221,7 @@ float TrainView::waveHeight(float x, float y) {
 		height += wave(i, x, y);
 	return height;
 }
-void TrainView::drawSence()
+void TrainView::drawSence(int mode,bool cube)
 {
 	//###############################################################
 	// pool
@@ -231,12 +231,21 @@ void TrainView::drawSence()
 	glm::mat4 model_matrix_pool = glm::mat4();
 	model_matrix_pool = glm::translate(model_matrix_pool, this->source_pos);
 	model_matrix_pool = glm::scale(model_matrix_pool, glm::vec3(100.0f, 100.0f, 100.0f));
-	model_matrix_pool = glm::translate(model_matrix_pool, glm::vec3(0, -0.35, 0));
+	model_matrix_pool = glm::translate(model_matrix_pool, glm::vec3(0, 0, 0));
 	this->tileShader->Use();
 	this->tileShader->setMat4("u_model", model_matrix_pool);
 
+	if(mode==1)
+		this->tileShader->setVec4("plane", glm::vec4(0, -1, 0, 0));
+	else if(mode==0)
+		this->tileShader->setVec4("plane", glm::vec4(0, 1, 0, 0));
+	else
+		this->tileShader->setVec4("plane", glm::vec4(0, 1, 0, 1000000));
+
 	this->textureTile->bind(0);
 	glUniform1i(glGetUniformLocation(this->tileShader->Program, "u_texture"), 0);
+
+	glEnable(GL_CLIP_DISTANCE0);
 
 	//bind VAO
 	glBindVertexArray(this->pool->vao);
@@ -244,15 +253,16 @@ void TrainView::drawSence()
 	glDrawArrays(GL_TRIANGLES, 0, 30);
 	//unbind VAO
 	glBindVertexArray(0);
+	
+	glDisable(GL_CLIP_DISTANCE0);
 	//###############################################################
-
 	//###############################################################
 	// skybox
 	// 
 	// draw skybox as last
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
-	
+
 	//bind shader
 	this->skyboxShader->Use();
 	this->textureSky->bind(0);
@@ -266,6 +276,84 @@ void TrainView::drawSence()
 	glDepthMask(GL_TRUE);
 
 	//###############################################################
+
+	if (!cube)return;
+	//###############################################################
+	//cubes
+	glPushMatrix();
+	glUseProgram(0);
+	GLUquadric* obj;
+	obj = gluNewQuadric();
+	//glTranslatef(0, -hei, 0);///
+	glEnable(GL_LIGHTING);
+	glTranslatef(this->source_pos.x, this->source_pos.y, this->source_pos.z);
+	if (mode == 1)
+	{
+		
+		glEnable(GL_CLIP_PLANE0);
+		
+
+		GLdouble equation[] = { 0.0, -1.0, 0.0, 0 };///
+	
+		//glTranslatef(0, hei, 0);
+	
+		glClipPlane(GL_CLIP_PLANE0, equation);
+
+		for (size_t i = 0; i < m_pTrack->points.size(); ++i) {
+			
+			if (((int)i) != selectedCube)
+				glColor3ub(240, 60, 60);
+			else
+				glColor3ub(240, 240, 30);
+
+			m_pTrack->points[i].draw();
+		}
+		//drawCube(0, 0, 0, 6);
+		glDisable(GL_CLIP_PLANE0);
+	}
+	else if (mode == 0)
+	{
+		glEnable(GL_CLIP_PLANE0);
+
+
+		GLdouble equation[] = { 0.0, 1.0, 0.0, 0 };
+
+		//glTranslatef(0, hei, 0);
+
+		glClipPlane(GL_CLIP_PLANE0, equation);
+
+		for (size_t i = 0; i < m_pTrack->points.size(); ++i) {
+
+			if (((int)i) != selectedCube)
+				glColor3ub(240, 60, 60);
+			else
+				glColor3ub(240, 240, 30);
+
+			m_pTrack->points[i].draw();
+		}
+		//drawCube(0, 0, 0, 6);
+		glDisable(GL_CLIP_PLANE0);
+	}
+	else
+	{
+
+		for (size_t i = 0; i < m_pTrack->points.size(); ++i) {
+			
+			if (((int)i) != selectedCube)
+				glColor3ub(240, 60, 60);
+			else
+				glColor3ub(240, 240, 30);
+			
+			m_pTrack->points[i].draw();
+		}
+		//drawCube(0, 0, 0, 6);
+
+	}
+	glDisable(GL_LIGHTING);
+glPopMatrix();
+	//###############################################################
+
+	
 
 	//###############################################################
 	// plane
@@ -288,6 +376,9 @@ void TrainView::drawSence()
 	////unbind VAO
 	//glBindVertexArray(0);
 	//###############################################################
+
+	
+
 }
 
 void TrainView::averageHeight(float* heightMap)
@@ -338,15 +429,15 @@ void TrainView::updateHeightMap()
 	static int lasttime1 = -1;
 	static int lasttime2 = -1;
 
-	if (autoGenerateWaves && (lasttime1<0|| std::clock()-lasttime1>waveTimeBreak))
+	if ((tw->waveBrowser->value()==1|| tw->waveBrowser->value() == 3) && (lasttime1<0|| std::clock()-lasttime1>waveTimeBreak))
 	{
 		lasttime1 = std::clock();
 		int x = rand() % 100;
 		int y = rand() % 100;
 		//heightMap[y * 100 + x]+=1.0;
-		addSource(x, y, waveHeigh);
+		addSource(x, y, tw->waveHei->value());
 	}
-	if (interactive && onDrag && (lasttime2<0 || std::clock() - lasttime2>100))
+	if ((tw->waveBrowser->value() == 2 || tw->waveBrowser->value() == 3) && onDrag && (lasttime2<0 || std::clock() - lasttime2>100))
 	{
 		lasttime2 = std::clock();
 
@@ -354,18 +445,17 @@ void TrainView::updateHeightMap()
 		getMouseLine(r1x, r1y, r1z, r2x, r2y, r2z);
 
 		double pointx, pointy, pointz;
-		mousePoleGo(r1x, r1y, r1z, r2x, r2y, r2z, 0, 0, 0, pointx, pointy, pointz, false);
+		mousePoleGo(r1x, r1y, r1z, r2x, r2y, r2z, 0, 5, 0, pointx, pointy, pointz, false);
 
 		if (pointx + 50 > 0 && pointx + 50 < 100 && pointz + 50 > 0 && pointz + 50 < 100)
-			addSource(pointx + 50, pointz + 50, waveHeigh);
+			addSource(pointx + 50, pointz + 50, tw->waveHei->value());
 	}
 
 	//clear up disappeared waves
 	for (int i=0;i<100;i++)
 	{
-		sources[i].update(waveSpeed);
+		sources[i].update(tw->speed->value());
 	}
-
 
 	//generate new height map
 	float newHeight[100 * 100];
@@ -438,14 +528,9 @@ void TrainView::draw()
 		glEnable(GL_LIGHT0);
 
 		// top view only needs one light
-		if (tw->topCam->value()) {
-			glDisable(GL_LIGHT1);
-			glDisable(GL_LIGHT2);
-		}
-		else {
+		
 			glEnable(GL_LIGHT1);
 			glEnable(GL_LIGHT2);
-		}
 
 		//initiailize VAO, VBO, Shader...
 		
@@ -485,7 +570,6 @@ void TrainView::draw()
 		glBufferData(GL_UNIFORM_BUFFER, this->commom_matrices->size, NULL, GL_STATIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-
 		//set water surface
 
 		GLfloat  vertices[10000 * 3];
@@ -501,7 +585,10 @@ void TrainView::draw()
 			{
 				float posx = i - 50, posy = 1, posz = j - 50;
 				vertices[(i * 100 + j)*3 + 0] = posx;
-				vertices[(i * 100 + j) * 3 + 1] = 3+this->heightMap[i*100+j];
+				if(tw->rippleWave->value())
+					vertices[(i * 100 + j) * 3 + 1] = this->heightMap[i*100+j];
+				if(tw->sineWave->value())
+					vertices[(i * 100 + j) * 3 + 1] = waveHeight(posx, posz);
 				vertices[(i * 100 + j)*3 + 2] = posz;
 
 				texture_coordinate[(i * 100 + j)*2 + 0] = (i) / 100.0;
@@ -610,31 +697,31 @@ void TrainView::draw()
 			// positions		  //normal  // texture Coords
 			-0.5f, -0.5f, -0.5f,  0,0,1,    0.0f, 0.0f,
 			 0.5f, -0.5f, -0.5f,  0,0,1,    1.0f, 0.0f,
-			 0.5f,  0.5f, -0.5f,  0,0,1,    1.0f, 1.0f,
-			 0.5f,  0.5f, -0.5f,  0,0,1,    1.0f, 1.0f,
-			-0.5f,  0.5f, -0.5f,  0,0,1,    0.0f, 1.0f,
+			 0.5f,  0.1f, -0.5f,  0,0,1,    1.0f, 1.0f,
+			 0.5f,  0.1f, -0.5f,  0,0,1,    1.0f, 1.0f,
+			-0.5f,  0.1f, -0.5f,  0,0,1,    0.0f, 1.0f,
 			-0.5f, -0.5f, -0.5f,  0,0,1,    0.0f, 0.0f,
 
 			-0.5f, -0.5f,  0.5f,  0,0,-1,   0.0f, 0.0f,
 			 0.5f, -0.5f,  0.5f,  0,0,-1,   1.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,  0,0,-1,   1.0f, 1.0f,
-			 0.5f,  0.5f,  0.5f,  0,0,-1,   1.0f, 1.0f,
-			-0.5f,  0.5f,  0.5f,  0,0,-1,   0.0f, 1.0f,
+			 0.5f,  0.1f,  0.5f,  0,0,-1,   1.0f, 1.0f,
+			 0.5f,  0.1f,  0.5f,  0,0,-1,   1.0f, 1.0f,
+			-0.5f,  0.1f,  0.5f,  0,0,-1,   0.0f, 1.0f,
 			-0.5f, -0.5f,  0.5f,  0,0,-1,   0.0f, 0.0f,
 
-			-0.5f,  0.5f,  0.5f,  1,0,0,    1.0f, 0.0f,
-			-0.5f,  0.5f, -0.5f,  1,0,0,    1.0f, 1.0f,
+			-0.5f,  0.1f,  0.5f,  1,0,0,    1.0f, 0.0f,
+			-0.5f,  0.1f, -0.5f,  1,0,0,    1.0f, 1.0f,
 			-0.5f, -0.5f, -0.5f,  1,0,0,    0.0f, 1.0f,
 			-0.5f, -0.5f, -0.5f,  1,0,0,    0.0f, 1.0f,
 			-0.5f, -0.5f,  0.5f,  1,0,0,    0.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f,  1,0,0,    1.0f, 0.0f,
+			-0.5f,  0.1f,  0.5f,  1,0,0,    1.0f, 0.0f,
 
-			 0.5f,  0.5f,  0.5f,  -1,0,0,   1.0f, 0.0f,
-			 0.5f,  0.5f, -0.5f,  -1,0,0,   1.0f, 1.0f,
+			 0.5f,  0.1f,  0.5f,  -1,0,0,   1.0f, 0.0f,
+			 0.5f,  0.1f, -0.5f,  -1,0,0,   1.0f, 1.0f,
 			 0.5f, -0.5f, -0.5f,  -1,0,0,   0.0f, 1.0f,
 			 0.5f, -0.5f, -0.5f,  -1,0,0,   0.0f, 1.0f,
 			 0.5f, -0.5f,  0.5f,  -1,0,0,   0.0f, 0.0f,
-			 0.5f,  0.5f,  0.5f,  -1,0,0,   1.0f, 0.0f,
+			 0.5f,  0.1f,  0.5f,  -1,0,0,   1.0f, 0.0f,
 
 			-0.5f, -0.5f, -0.5f,  0,1,0,    0.0f, 1.0f,
 			 0.5f, -0.5f, -0.5f,  0,1,0,    1.0f, 1.0f,
@@ -862,27 +949,131 @@ void TrainView::draw()
 
 	drawStuff();
 
-	// this time drawing is for shadows (except for top view)
-	if (!tw->topCam->value()) {
-		setupShadows();
-		drawStuff(true);
-		unsetupShadows();
-	}
+	
+	glm::mat4 view_matrix;
+	glGetFloatv(GL_MODELVIEW_MATRIX, &view_matrix[0][0]);
+	glm::mat4 inview_matrix;
+	inview_matrix = glm::inverse(view_matrix);
+	glm::vec3 campos = inview_matrix * glm::vec4(0, 0, 0, 1);
+
+	glPushMatrix();
+	glTranslatef(0.0,2*5.0,0.0);//fucking sourse_pos
+	GLfloat reflect[] = {
+		1.0,0.0,0.0,0.0,
+		0.0,-1.0,0.0,0.0,
+		0.0,0.0,1.0,0.0,
+		0.0,0.0,0.0,1.0,
+	};
+	glMultMatrixf(reflect);
 	
 	setUBO();
 	glBindBufferRange(
 		GL_UNIFORM_BUFFER, /*binding point*/0, this->commom_matrices->ubo, 0, this->commom_matrices->size);
-	
+	glBindBufferRange(
+		GL_UNIFORM_BUFFER, /*binding point*/1, this->commom_matrices->ubo, 0, this->commom_matrices->size);
+
 	WaterFrameBuffers* fbos = new WaterFrameBuffers();
+
 	fbos->bindReflectionFrameBuffer();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	this->drawSence();
-	
+	if(campos.y>0)
+		this->drawSence(0);
+	else
+		this->drawSence(1);
+
 	fbos->unbindCurrentFrameBuffer();
 
-	this->drawSence();
+	glPopMatrix();
+
+	
+	//glMatrixMode(GL_PROJECTION);
+	//	glLoadIdentity();
+	//gluPerspective(40, 1, .1, 100000);
+	//
+	//// Put the camera where we want it to be
+	//glMatrixMode(GL_MODELVIEW);
+	//glLoadIdentity();
+	
+
+	//gluLookAt(campos.x, -campos.y, campos.z, 0, 0, -1, 0.0, 1.0, 0.0);
+
+	//std::cout << campos.x <<" " << campos.y << " " << campos.z << "\n";
+
+
+
+	//#############
+
+	glPushMatrix();
+	if (campos.y > 0)
+	{
+		GLfloat refract[] = {
+		1.0,0.0,0.0,0.0,
+		0.0,0.75,0.0,0.0,
+		0.0,0.0,1.0,0.0,
+		0.0,0.0,0.0,1.0,
+		};
+		glMultMatrixf(refract);
+		glTranslatef(0.0, 5.0*0.33, 0.0);//fucking sourse_pos
+	}
+	else
+	{
+		GLfloat refract[] = {
+		1.0,0.0,0.0,0.0,
+		0.0,1.33,0.0,0.0,
+		0.0,0.0,1.0,0.0,
+		0.0,0.0,0.0,1.0,
+		};
+		glMultMatrixf(refract);
+		glTranslatef(0.0, 5.0*-0.33, 0.0);//fucking sourse_pos
+	}
+	
+	
+	//glLoadIdentity();
+	//gluLookAt(campos.x, campos.y, campos.z, 0, 0, 0, sin((clock() % 2000-1000) * 0.001),cos((clock()%2000-1000)*0.001),0.0);
+	setUBO();
+	fbos->bindRefractionFrameBuffer();
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	if(campos.y>0)
+		this->drawSence(1);
+	else
+		this->drawSence(0);
+
+	fbos->unbindCurrentFrameBuffer();
+
+	glPopMatrix();
+	//##############
+	//#############
+
+	setUBO();
+
+	WaterFrameBuffers* fbos_nocube = new WaterFrameBuffers();
+
+	glPushMatrix();
+
+	//glTranslatef(0.0, -5.0, 0.0);//fucking sourse_pos
+
+	setUBO();
+	fbos_nocube->bindRefractionFrameBuffer();
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	if (campos.y > 0)
+		this->drawSence(1,false);
+	else
+		this->drawSence(0,false);
+
+	fbos_nocube->unbindCurrentFrameBuffer();
+
+	glPopMatrix();
+	//#############
+
+	setUBO();
+
+	this->drawSence(2);
 
 	//###############################################################
 	// plane
@@ -913,25 +1104,96 @@ void TrainView::draw()
 	model_matrix = glm::translate(model_matrix, this->source_pos);
 	
 	this->shader->setMat4("u_model", model_matrix);
+	shader->setInt("boxNum", m_pTrack->points.size());
+	shader->setFloat("boxScale", m_pTrack->points[0].size);
+
+	shader->setBool("both", tw->worldCam->value());
+	shader->setBool("reflectOnly", tw->reflectCam->value());
+	shader->setBool("refractOnly", tw->refractCam->value());
+	//points
+	glm::vec3 pos[100];
+	for (int i = 0; i < m_pTrack->points.size(); i++)
+	{
+		pos[i] = glm::vec3(m_pTrack->points[i].pos.x, m_pTrack->points[i].pos.y, m_pTrack->points[i].pos.z);
+		std::string namei = "pos[";
+		char num[4];
+		itoa(i, num, 10);
+
+		namei.append(num);
+		namei.append("]");
+		shader->setVec3(namei.c_str(), pos[i]);
+	}
 
 	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, fbos->getRefractionTexture());
+	glUniform1i(glGetUniformLocation(this->shader->Program,"refract_texture"), 0);
+
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, fbos_nocube->getRefractionTexture());
+	glUniform1i(glGetUniformLocation(this->shader->Program, "refract_no_cube_texture"), 1);
+
+	glActiveTexture(GL_TEXTURE0 + 2);
 	glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
-	glUniform1i(glGetUniformLocation(this->shader->Program,"u_texture"), 0);
-
-	this->textureSky->bind(1);
-	glUniform1i(glGetUniformLocation(this->shader->Program, "skybox"), 1);
-
-	this->textureTile->bind(2);
-	glUniform1i(glGetUniformLocation(this->shader->Program, "dudv"), 2);
+	glUniform1i(glGetUniformLocation(this->shader->Program, "reflect_texture"), 2);
 	
+	
+
 	glBindVertexArray(plane->vao);
 	
 	glDrawElements(GL_TRIANGLES, this->plane->element_amount, GL_UNSIGNED_INT, 0);
 	
+	//###########################################################################
 
+	this->guiShader->Use();
+	GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
+	VAO* gui = new VAO();
+	glGenVertexArrays(1, &gui->vao);
+	glGenBuffers(1, &gui->vbo[0]);
+	glBindVertexArray(gui->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
+	glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
+	
+	guiShader->setFloat("scale", 0.3);
+	guiShader->setVec2("pos", glm::vec2(-2, 2));
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	//###############################################################
+	//###########################################################################
+
+	this->guiShader->Use();
+	//GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
+	/*VAO**/ gui = new VAO();
+	glGenVertexArrays(1, &gui->vao);
+	glGenBuffers(1, &gui->vbo[0]);
+	glBindVertexArray(gui->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+
+	glActiveTexture(GL_TEXTURE0 + 0);
+	glBindTexture(GL_TEXTURE_2D, fbos->getRefractionTexture());
+	glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
+
+	guiShader->setFloat("scale", 0.3);
+	guiShader->setVec2("pos", glm::vec2(2, 2));
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	//###############################################################
+	// 
 	// Unbind VAO
 	glBindVertexArray(0);
-	//###############################################################
+	fbos_nocube->cleanUp();
+	delete fbos_nocube;
+
 	fbos->cleanUp();
 	delete fbos;
 	//unbind shader(switch to fixed pipeline)
@@ -968,38 +1230,15 @@ setProjection()
 	float aspect = static_cast<float>(w()) / static_cast<float>(h());
 
 	// Check whether we use the world camp
-	if (tw->worldCam->value())
-		arcball.setProjection(false);
-	// Or we use the top cam
-	else if (tw->topCam->value()) {
-		float wi, he;
-		if (aspect >= 1) {
-			wi = 110;
-			he = wi / aspect;
-		} 
-		else {
-			he = 110;
-			wi = he * aspect;
-		}
-
-		// Set up the top camera drop mode to be orthogonal and set
-		// up proper projection matrix
-		glMatrixMode(GL_PROJECTION);
-		glOrtho(-wi, wi, -he, he, 200, -200);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glRotatef(-90,1,0,0);
-	} 
+	
+	arcball.setProjection(false);
+	
 	// Or do the train view or other view here
 	//####################################################################
 	// TODO: 
 	// put code for train view projection here!	
 	//####################################################################
-	else {
-#ifdef EXAMPLE_SOLUTION
-		trainCamView(this,aspect);
-#endif
-	}
+	
 }
 
 //************************************************************************
@@ -1133,7 +1372,9 @@ void TrainView::setUBO()
 	//projection_matrix = glm::perspective(glm::radians(this->arcball.getFoV()), (GLfloat)wdt / (GLfloat)hgt, 0.01f, 1000.0f);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, this->commom_matrices->ubo);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), &projection_matrix[0][0]);
-	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &view_matrix[0][0]);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), &projection_matrix);
+	glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), &view_matrix);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	
 }

@@ -18,8 +18,11 @@ out V_OUT
    vec2 texture_coordinate;
 } v_out;
 
+uniform vec4 plane;
+
 void main()
 {
+	gl_ClipDistance[0] = dot(vec4(position,1.0),plane);
 
     if(dot(vec3(inverse(u_view)*vec4(0,0,0,1))-vec3( u_model * vec4(position, 1.0f)),normal)>0)
         gl_Position = u_projection * u_view * u_model * vec4(position, 1.0f);

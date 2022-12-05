@@ -78,17 +78,26 @@ class TrainWindow : public Fl_Double_Window {
 
 		// which viewpoint are we drawing from
 		Fl_Button*			worldCam;
-		Fl_Button*			trainCam;
-		Fl_Button*			topCam;
+		Fl_Button*			reflectCam;
+		Fl_Button*			refractCam;
+
+		//which mode of wave we use
+		Fl_Button*			sineWave;
+		Fl_Button*			rippleWave;
+
 
 		// the type of the spline (use its value to determine)
-		Fl_Browser*			splineBrowser;
+		Fl_Browser* waveBrowser;//for ripple
+		Fl_Browser* waveBrowser2;//fore sine
 
 		// are we animating the train?
 		Fl_Button*			runButton;
 		// if we're animating it, how fast should it go?
-		Fl_Value_Slider*	speed;
-		Fl_Button*			arcLength;		// do we use arc length for speed?
+		Fl_Value_Slider* speed;
+
+		//wave height?
+		Fl_Value_Slider* waveHei;
+
 
 		// we have other widgets as part of the sample solution
 		// this is not for 559 students to know about

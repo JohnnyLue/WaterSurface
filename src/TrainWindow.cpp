@@ -60,23 +60,9 @@ TrainWindow(const int x, const int y)
 		widgets = new Fl_Group(600,5,190,590);
 		widgets->begin();
 
-		runButton = new Fl_Button(605,pty,60,20,"Run");
+		runButton = new Fl_Button(670,pty,60,20,"Run");
 		togglify(runButton,1);
-
-		Fl_Button* fb = new Fl_Button(700,pty,25,20,"@>>");
-		fb->callback((Fl_Callback*)forwCB,this);
-		Fl_Button* rb = new Fl_Button(670,pty,25,20,"@<<");
-		rb->callback((Fl_Callback*)backCB,this);
 		
-		arcLength = new Fl_Button(730,pty,65,20,"ArcLength");
-		togglify(arcLength,1);
-  
-		pty+=25;
-		speed = new Fl_Value_Slider(655,pty,140,20,"speed");
-		speed->range(0,10);
-		speed->value(2);
-		speed->align(FL_ALIGN_LEFT);
-		speed->type(FL_HORIZONTAL);
 
 		pty += 30;
 
@@ -88,59 +74,94 @@ TrainWindow(const int x, const int y)
         worldCam->value(1);			// turned on
         worldCam->selection_color((Fl_Color)3); // yellow when pressed
 		worldCam->callback((Fl_Callback*)damageCB,this);
-		trainCam = new Fl_Button(670, pty, 60, 20, "Train");
-        trainCam->type(FL_RADIO_BUTTON);
-        trainCam->value(0);
-        trainCam->selection_color((Fl_Color)3);
-		trainCam->callback((Fl_Callback*)damageCB,this);
-		topCam = new Fl_Button(735, pty, 60, 20, "Top");
-        topCam->type(FL_RADIO_BUTTON);
-        topCam->value(0);
-        topCam->selection_color((Fl_Color)3);
-		topCam->callback((Fl_Callback*)damageCB,this);
+		reflectCam = new Fl_Button(670, pty, 60, 20, "reflect");
+		reflectCam->type(FL_RADIO_BUTTON);
+		reflectCam->value(0);
+		reflectCam->selection_color((Fl_Color)3);
+		reflectCam->callback((Fl_Callback*)damageCB,this);
+		refractCam = new Fl_Button(735, pty, 60, 20, "refract");
+        refractCam->type(FL_RADIO_BUTTON);
+        refractCam->value(0);
+        refractCam->selection_color((Fl_Color)3);
+		refractCam->callback((Fl_Callback*)damageCB,this);
 		camGroup->end();
+		pty += 30;
+
+		// add and delete points
+		Fl_Button* ap = new Fl_Button(605, pty, 80, 20, "Add Cube");
+		ap->callback((Fl_Callback*)addPointCB, this);
+		Fl_Button* dp = new Fl_Button(690, pty, 80, 20, "Delete Cube");
+		dp->callback((Fl_Callback*)deletePointCB, this);
+
+		pty += 30;
+		// reset the points
+		resetButton = new Fl_Button(735, pty, 60, 20, "Reset");
+		resetButton->callback((Fl_Callback*)resetCB, this);
+		Fl_Button* loadb = new Fl_Button(605, pty, 60, 20, "Load");
+		loadb->callback((Fl_Callback*)loadCB, this);
+		Fl_Button* saveb = new Fl_Button(670, pty, 60, 20, "Save");
+		saveb->callback((Fl_Callback*)saveCB, this);
+
+		pty += 30;
+		// roll the points
+		Fl_Button* rx = new Fl_Button(605, pty, 30, 20, "R+X");
+		rx->callback((Fl_Callback*)rpxCB, this);
+		Fl_Button* rxp = new Fl_Button(635, pty, 30, 20, "R-X");
+		rxp->callback((Fl_Callback*)rmxCB, this);
+		Fl_Button* rz = new Fl_Button(670, pty, 30, 20, "R+Z");
+		rz->callback((Fl_Callback*)rpzCB, this);
+		Fl_Button* rzp = new Fl_Button(700, pty, 30, 20, "R-Z");
+		rzp->callback((Fl_Callback*)rmzCB, this);
 
 		pty += 30;
 
+		// camera buttons - in a radio button group
+		Fl_Group* waveGroup = new Fl_Group(600,pty,195,20);
+		waveGroup->begin();
+		sineWave = new Fl_Button(605, pty, 60, 20, "sine wave");
+        sineWave->type(FL_RADIO_BUTTON);		// radio button
+        sineWave->value(0);			// turned on
+        sineWave->selection_color((Fl_Color)3); // yellow when pressed
+		sineWave->callback((Fl_Callback*)damageWave,this);
+		rippleWave = new Fl_Button(670, pty, 60, 20, "ripple");
+		rippleWave->type(FL_RADIO_BUTTON);
+		rippleWave->value(1);
+		rippleWave->selection_color((Fl_Color)3);
+		rippleWave->callback((Fl_Callback*)damageWave,this);
+		waveGroup->end();
+
+		pty += 30;
+		///////////different
+		// 
+		// 
 		// browser to select spline types
 		// TODO: make sure these choices are the same as what the code supports
-		splineBrowser = new Fl_Browser(605,pty,120,75,"Spline Type");
-		splineBrowser->type(2);		// select
-		splineBrowser->callback((Fl_Callback*)damageCB,this);
-		splineBrowser->add("Linear");
-		splineBrowser->add("Cardinal Cubic");
-		splineBrowser->add("Cubic B-Spline");
-		splineBrowser->select(2);
+		waveBrowser = new Fl_Browser(605,pty,120,75,"Mode");
+		waveBrowser->type(2);		// select
+		waveBrowser->callback((Fl_Callback*)damageCB,this);
+		waveBrowser->add("auto generate");
+		waveBrowser->add("reactive");
+		waveBrowser->add("both");
+		waveBrowser->add("no wave");
+		waveBrowser->select(1);
 
-		pty += 110;
+		pty += 120;
+		speed = new Fl_Value_Slider(630, pty, 140, 20, "wave speed");
+		speed->range(1, 5);
+		speed->value(2);
+		speed->align(FL_ALIGN_TOP);
+		speed->type(FL_HORIZONTAL);
 
-		// add and delete points
-		Fl_Button* ap = new Fl_Button(605,pty,80,20,"Add Point");
-		ap->callback((Fl_Callback*)addPointCB,this);
-		Fl_Button* dp = new Fl_Button(690,pty,80,20,"Delete Point");
-		dp->callback((Fl_Callback*)deletePointCB,this);
+		pty += 45;
+		waveHei = new Fl_Value_Slider(630, pty, 140, 20, "wave height");
+		waveHei->range(-1.5, 1.5);
+		waveHei->value(2);
+		waveHei->align(FL_ALIGN_TOP);
+		waveHei->type(FL_HORIZONTAL);
 
-		pty += 25;
-		// reset the points
-		resetButton = new Fl_Button(735,pty,60,20,"Reset");
-		resetButton->callback((Fl_Callback*)resetCB,this);
-		Fl_Button* loadb = new Fl_Button(605,pty,60,20,"Load");
-		loadb->callback((Fl_Callback*) loadCB, this);
-		Fl_Button* saveb = new Fl_Button(670,pty,60,20,"Save");
-		saveb->callback((Fl_Callback*) saveCB, this);
+		pty -= 90;//go back
+		//################################
 
-		pty += 25;
-		// roll the points
-		Fl_Button* rx = new Fl_Button(605,pty,30,20,"R+X");
-		rx->callback((Fl_Callback*)rpxCB,this);
-		Fl_Button* rxp = new Fl_Button(635,pty,30,20,"R-X");
-		rxp->callback((Fl_Callback*)rmxCB,this);
-		Fl_Button* rz = new Fl_Button(670,pty,30,20,"R+Z");
-		rz->callback((Fl_Callback*)rpzCB,this);
-		Fl_Button* rzp = new Fl_Button(700,pty,30,20,"R-Z");
-		rzp->callback((Fl_Callback*)rmzCB,this);
-
-		pty+=30;
 
 		// TODO: add widgets for all of your fancier features here
 #ifdef EXAMPLE_SOLUTION

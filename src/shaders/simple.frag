@@ -17,16 +17,90 @@ layout (std140, binding = 0) uniform commom_matrices
 };
 
 
-uniform sampler2D u_texture;
-uniform samplerCube skybox;
-uniform sampler2D dudv;
+uniform sampler2D refract_texture;
+uniform sampler2D refract_no_cube_texture;
+uniform sampler2D reflect_texture;
 
-uniform vec4 color_ambient = vec4(1,1,1,1.0);
-uniform vec4 color_diffuse = vec4(0.2,0.3,0.6,1.0);
-uniform vec4 color_specular = vec4(1.0,1.0,1.0,1.0);
-uniform float shininess = 0.9;
-uniform vec3 light_position = vec3(50.0f,32.0f,560.0f);
-uniform vec3 eyeDirection = vec3(0,0,1);
+uniform int boxNum;
+uniform float boxScale;
+uniform vec3 pos[100];
+
+uniform bool both;
+uniform bool reflectOnly;
+uniform bool refractOnly;
+
+bool encountered;
+
+vec3 planePs[]={vec3(0,0,-1),vec3(0,0,1),vec3(-1,0,0),vec3(1,0,0),vec3(0,-1,0),vec3(0,1,0)};
+
+vec3 planeNs[]={vec3(0,0,1),vec3(0,0,-1),vec3(1,0,0),vec3(-1,0,0),vec3(0,1,0),vec3(0,-1,0)};
+
+vec3 Intersect(vec3 planeP, vec3 planeN, vec3 rayP, vec3 rayD)
+{
+    float d = dot(planeP, -planeN);
+    float t = -(d + dot(rayP, planeN)) / dot(rayD, planeN);
+    return rayP + t * rayD;
+}
+
+vec3 RayBoxs(vec3 rayP, vec3 rayD)
+{
+    vec3 resPos =vec3(999);
+    encountered = false;
+
+    for(int n=0;n<boxNum;n++)
+    {
+        vec3 boxPs[]={
+        vec3(pos[n].x ,pos[n].y ,pos[n].z-boxScale),
+        vec3(pos[n].x ,pos[n].y ,pos[n].z+boxScale),
+        vec3(pos[n].x-boxScale,pos[n].y ,pos[n].z ),
+        vec3(pos[n].x+boxScale,pos[n].y ,pos[n].z ),
+        vec3(pos[n].x ,pos[n].y-boxScale,pos[n].z ),
+        vec3(pos[n].x ,pos[n].y+boxScale,pos[n].z ),
+        };
+
+        for(int i=5;i>=0;i--)
+        {
+
+            vec3 tempPos = Intersect(boxPs[i],planeNs[i],rayP,rayD);
+            
+            
+            if(
+                tempPos.x<pos[n].x+boxScale+0.001&&
+                tempPos.x>pos[n].x-boxScale-0.001&&
+                tempPos.y<pos[n].y+boxScale+0.001&&
+                tempPos.y>pos[n].y-boxScale-0.001&&
+                tempPos.z<pos[n].z+boxScale+0.001&&
+                tempPos.z>pos[n].z-boxScale-0.001)
+            {
+                if(dot(vec3(tempPos-rayP),rayD)<0)
+                    continue;
+                if(distance(tempPos,rayP)<distance(resPos,rayP))
+                { 
+                    resPos=tempPos;
+                    encountered = true;
+                }
+            }
+        }
+    }
+    for(int i=5;i>=0;i--)
+    {
+        if(dot(rayD,planeNs[i])>0)continue;
+
+        vec3 tempPos = Intersect(planePs[i]*50.0,planeNs[i],rayP,rayD);
+        
+        if(abs(tempPos.x)<=50.0+0.1&&tempPos.y>=-50.0-0.1&&abs(tempPos.z)<=50.0+0.1)
+        { 
+            if(distance(tempPos,rayP)<distance(resPos,rayP))
+            { 
+                resPos=tempPos;
+                encountered = false;
+                break;
+            }
+        }
+    }
+
+    return resPos;
+}
 
 void main()
 {  
@@ -41,22 +115,35 @@ void main()
         Rr = refract(I, normalize(f_in.normal),0.75);
 
     vec3 Re = reflect(I, normalize(f_in.normal));
+    //=====================================================================
+    vec3 refractPos = RayBoxs(f_in.position, I);
+   
+    vec4 refractClip = u_projection * u_view * vec4(refractPos, 1.0f); 
 
-    vec4 flectColor = vec4(texture(skybox, Re).rgb, 1.0);
-    vec4 fractColor = vec4(texture(skybox, Rr).rgb, 1.0);
+    vec2 ndc = (refractClip.xy/refractClip.w)/2.0+0.5;
+    vec2 refractCoord = ndc.xy;
 
-    vec2 ndc = (f_in.clipSpace.xy/f_in.clipSpace.w)/2.0+0.5;
-    vec2 reflectCoord = ndc.xy;
-    vec2 refractCoord = vec2(ndc.x,-ndc.y);
+    vec3  fractColor;
+    if(true)
+        fractColor= vec3(texture(refract_texture, refractCoord));
+    else
+        fractColor= vec3(texture(refract_no_cube_texture, refractCoord));
+    //====================================================================
+    vec3 reflectPos = RayBoxs(f_in.position, vec3(Re.x,-Re.y,Re.z));
 
-    //vec2 distort = (vec3(texture(dudv, vec2(reflectCoord.x,reflectCoord.y))).rg*2.0-1.0)*0.02;
-    //reflectCoord += distort;
-    //reflectCoord.x = clamp(reflectCoord.x,0.001,0.999);
-    //reflectCoord.y = clamp(reflectCoord.y,0.001,0.999);
+    vec4 reflectClip = u_projection * u_view * vec4(reflectPos, 1.0f); 
 
-    vec3 color = vec3(texture(u_texture, reflectCoord));
+    //vec2 ndc2 = (f_in.clipSpace.xy/f_in.clipSpace.w)/2.0+0.5;
+    vec2 ndc2 = (reflectClip.xy/reflectClip.w)/2.0+0.5;
+    vec2 relectCoord = vec2(ndc2.x,ndc2.y);
 
-    /*min(vec4(color,1.0)*color_ambient,vec4(1.0)) + diffuse*color_diffuse + specular*color_specular;*/
+    vec3 flectColor = vec3(texture(reflect_texture,relectCoord));
 
-    f_color = mix(flectColor,vec4(color,1.0),abs(I.y));
+    //===================================================================
+    if(both)
+        f_color = mix(vec4(0,0,1,1),mix(vec4(flectColor,1.0),vec4(fractColor,1.0),abs(I.y)),0.95);
+    else if(reflectOnly)
+        f_color  = vec4(flectColor,1.0);
+    else
+        f_color  = vec4(fractColor,1.0);
 }

@@ -32,6 +32,7 @@ void damageCB(Fl_Widget*, TrainWindow* tw);
 // Callback that adds a new point to the spline
 // idea: add the point AFTER the selected point
 void addPointCB(Fl_Widget*, TrainWindow* tw);
+void damageWave(Fl_Widget*, TrainWindow* tw);
 
 
 // Callback that deletes a point from the spline

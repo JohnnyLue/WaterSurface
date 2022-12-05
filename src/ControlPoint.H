@@ -45,4 +45,5 @@ class ControlPoint {
 	public:
 		Pnt3f pos;         // Position of this control point
 		Pnt3f orient;		 // Orientation of this control point
+		float size=5.0;
 };

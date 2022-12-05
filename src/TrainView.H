@@ -62,7 +62,7 @@ class CTrack;
 class waveSource {
 	int x, y;
 	float hei;
-	int distance;
+	float distance;
 	
 public:
 	bool inUse;
@@ -96,7 +96,7 @@ public:
 		return totalHeight;
 	}
 
-	void update(int waveSpeed)
+	void update(float waveSpeed)
 	{
 		if (dies())
 			return;
@@ -151,7 +151,7 @@ class TrainView : public Fl_Gl_Window
 
 		float waveHeight(float x, float y);
 
-		void drawSence();
+		void drawSence(int mode,bool cube=true);
 
 		void updateHeightMap();
 
@@ -160,6 +160,7 @@ class TrainView : public Fl_Gl_Window
 		void addSource(int x, int y, float height);
 	public:
 		ArcBallCam		arcball;			// keep an ArcBall for the UI
+		
 		int				selectedCube = -1;  // simple - just remember which cube is selected
 
 		float eyex, eyey, eyez;
@@ -181,6 +182,7 @@ class TrainView : public Fl_Gl_Window
 		VAO* pool			= nullptr;
 		VAO* skybox			= nullptr;
 		UBO* commom_matrices= nullptr;
+		UBO* points			= nullptr;
 
 		//OpenAL
 		glm::vec3 source_pos;
@@ -200,11 +202,7 @@ class TrainView : public Fl_Gl_Window
 		float direction[8][2];
 		
 		//control waves
-		bool autoGenerateWaves = false;
-		bool interactive = true;
 		bool onDrag = false;
-		float waveHeigh = .3;
-		int waveSpeed = 3;
 		int waveTimeBreak = 300;
 		float heightMap[100 * 100];
 

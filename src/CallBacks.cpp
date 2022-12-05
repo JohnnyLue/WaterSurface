@@ -58,6 +58,28 @@ void damageCB(Fl_Widget*, TrainWindow* tw)
 
 //***************************************************************************
 //
+// * for sine and ripple wave panel
+//===========================================================================
+void damageWave(Fl_Widget*, TrainWindow* tw)
+{
+	if (tw->rippleWave->value())
+	{
+		tw->waveBrowser->show();
+		tw->speed->show();
+		tw->waveHei->show();
+	}
+	else
+	{
+		tw->waveBrowser->hide();
+		tw->speed->hide();
+		tw->waveHei->hide();
+	}
+
+	tw->damageMe();
+}
+
+//***************************************************************************
+//
 // * Callback that adds a new point to the spline
 // idea: add the point AFTER the selected point
 //===========================================================================
