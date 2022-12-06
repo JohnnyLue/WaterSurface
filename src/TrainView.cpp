@@ -1165,48 +1165,48 @@ void TrainView::draw()
 	
 	//###########################################################################
 
-	this->guiShader->Use();
-	GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
-	VAO* gui = new VAO();
-	glGenVertexArrays(1, &gui->vao);
-	glGenBuffers(1, &gui->vbo[0]);
-	glBindVertexArray(gui->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
-
-	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
-	glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
-	
-	guiShader->setFloat("scale", 0.3);
-	guiShader->setVec2("pos", glm::vec2(-2, 2));
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-	//###############################################################
-	//###########################################################################
-
-	this->guiShader->Use();
+	//this->guiShader->Use();
 	//GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
-	/*VAO**/ gui = new VAO();
-	glGenVertexArrays(1, &gui->vao);
-	glGenBuffers(1, &gui->vbo[0]);
-	glBindVertexArray(gui->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
-
-	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, fbos->getRefractionTexture());
-	glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
-
-	guiShader->setFloat("scale", 0.3);
-	guiShader->setVec2("pos", glm::vec2(2, 2));
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	//VAO* gui = new VAO();
+	//glGenVertexArrays(1, &gui->vao);
+	//glGenBuffers(1, &gui->vbo[0]);
+	//glBindVertexArray(gui->vao);
+	//glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+	//
+	//glActiveTexture(GL_TEXTURE0 + 0);
+	//glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
+	//glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
+	//
+	//guiShader->setFloat("scale", 0.3);
+	//guiShader->setVec2("pos", glm::vec2(-2, 2));
+	//
+	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	//
+	////###############################################################
+	////###########################################################################
+	//
+	//this->guiShader->Use();
+	////GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
+	///*VAO**/ gui = new VAO();
+	//glGenVertexArrays(1, &gui->vao);
+	//glGenBuffers(1, &gui->vbo[0]);
+	//glBindVertexArray(gui->vao);
+	//glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+	//
+	//glActiveTexture(GL_TEXTURE0 + 0);
+	//glBindTexture(GL_TEXTURE_2D, fbos->getRefractionTexture());
+	//glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
+	//
+	//guiShader->setFloat("scale", 0.3);
+	//guiShader->setVec2("pos", glm::vec2(2, 2));
+	//
+	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	//###############################################################
 	// 

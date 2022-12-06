@@ -118,7 +118,7 @@ TrainWindow(const int x, const int y)
 		// camera buttons - in a radio button group
 		Fl_Group* waveGroup = new Fl_Group(600,pty,195,20);
 		waveGroup->begin();
-		sineWave = new Fl_Button(605, pty, 60, 20, "sine wave");
+		sineWave = new Fl_Button(605, pty, 60, 20, "sin wave");
         sineWave->type(FL_RADIO_BUTTON);		// radio button
         sineWave->value(0);			// turned on
         sineWave->selection_color((Fl_Color)3); // yellow when pressed
@@ -155,7 +155,7 @@ TrainWindow(const int x, const int y)
 		pty += 45;
 		waveHei = new Fl_Value_Slider(630, pty, 140, 20, "wave height");
 		waveHei->range(-1.5, 1.5);
-		waveHei->value(2);
+		waveHei->value(0.8);
 		waveHei->align(FL_ALIGN_TOP);
 		waveHei->type(FL_HORIZONTAL);
 
