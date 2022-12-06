@@ -22,8 +22,6 @@ out V_OUT
 
 void main()
 {
-   
-
     v_out.clipSpace= u_projection * u_view *u_model * vec4(position, 1.0f);
     gl_Position = v_out.clipSpace;
     vec3 oriPos = vec3(position.x,0,position.z);

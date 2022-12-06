@@ -172,6 +172,7 @@ class TrainView : public Fl_Gl_Window
 		Shader* tileShader		= nullptr;
 		Shader* skyboxShader	= nullptr;
 		Shader* guiShader		= nullptr;
+		Shader* causticsShader	= nullptr;
 
 		Texture2D* texture			= nullptr;
 		Texture2D* textureTile		= nullptr;

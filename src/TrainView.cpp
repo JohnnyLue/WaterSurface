@@ -494,6 +494,8 @@ void TrainView::draw()
 	//
 	//**********************************************************************
 	//initialized glad
+
+	GLfloat  normal[10000 * 3];//move here so doing caustics can use
 	if (gladLoadGL())
 	{
 		// Set up the view port
@@ -534,6 +536,15 @@ void TrainView::draw()
 
 		//initiailize VAO, VBO, Shader...
 		
+			
+		if (!this->causticsShader)
+			this->causticsShader = new
+			Shader(
+				PROJECT_DIR "/src/shaders/caustics.vert",
+				nullptr, nullptr, nullptr,
+				PROJECT_DIR "/src/shaders/caustics.frag");
+
+
 		if (!this->guiShader)
 			this->guiShader = new
 			Shader(
@@ -573,7 +584,7 @@ void TrainView::draw()
 		//set water surface
 
 		GLfloat  vertices[10000 * 3];
-		GLfloat  normal[10000 * 3];
+		
 		GLfloat  texture_coordinate[10000 * 2];
 		GLuint element[99 * 99 * 2 * 3];
 
@@ -1092,9 +1103,20 @@ void TrainView::draw()
 	glPopMatrix();
 	//#############
 
+	
+	WaterFrameBuffers* fbos_for_caustics = new WaterFrameBuffers();
+
+	fbos_for_caustics->bindReflectionFrameBuffer();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//###############################################################
 	setUBO();
 
+
+	
 	this->drawSence(2);
+
+
 
 	//###############################################################
 	// plane
@@ -1118,6 +1140,8 @@ void TrainView::draw()
 	//glEnableVertexAttribArray(0);
 	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+
+	//###########################################################################
 	//use water surface
 	this->shader->Use();
 	
@@ -1162,51 +1186,108 @@ void TrainView::draw()
 	glBindVertexArray(plane->vao);
 	
 	glDrawElements(GL_TRIANGLES, this->plane->element_amount, GL_UNSIGNED_INT, 0);
-	
+
 	//###########################################################################
 
-	this->guiShader->Use();
+	fbos_for_caustics->unbindCurrentFrameBuffer();
+
+
+	//###########################################################################
+	this->causticsShader->Use();
+
 	GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
-	VAO* gui = new VAO();
-	glGenVertexArrays(1, &gui->vao);
-	glGenBuffers(1, &gui->vbo[0]);
-	glBindVertexArray(gui->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	VAO* caustics = new VAO();
+	glGenVertexArrays(1, &caustics->vao);
+	glGenBuffers(1, &caustics->vbo[0]);
+	glBindVertexArray(caustics->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, caustics->vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
-	glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
+	glBindTexture(GL_TEXTURE_2D, fbos_for_caustics->getReflectionTexture());
+	glUniform1i(glGetUniformLocation(this->guiShader->Program, "senceTexture"), 0);
+
+	//set
+
+	this->causticsShader->setInt("boxNum", m_pTrack->points.size());
+	this->causticsShader->setFloat("boxScale", m_pTrack->points[0].size);
+
 	
-	guiShader->setFloat("scale", 0.3);
-	guiShader->setVec2("pos", glm::vec2(-2, 2));
+	for (int i = 0; i < m_pTrack->points.size(); i++)
+	{
+		pos[i] = glm::vec3(m_pTrack->points[i].pos.x, m_pTrack->points[i].pos.y, m_pTrack->points[i].pos.z);
+		std::string namei = "pos[";
+		char num[4];
+		itoa(i, num, 10);
+
+		namei.append(num);
+		namei.append("]");
+		this->causticsShader->setVec3(namei.c_str(), pos[i]);
+	}
+
+	//glm::vec3 norm[10000];
+	//for (int i = 0; i < 10000; i++)
+	//{
+	//	norm[i] = glm::vec3(normal[i * 3 + 0], normal[i * 3 + 1], normal[i * 3 + 2]);
+	//	std::string namei = "normal[";
+	//	char num[6];
+	//	itoa(i, num, 10);
+	//
+	//	namei.append(num);
+	//	namei.append("]");
+	//	this->causticsShader->setVec3(namei.c_str(), norm[i]);
+	//}
+
+	this->causticsShader->setBool("useCaustics", true);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	//###############################################################
+
 	//###########################################################################
 
-	this->guiShader->Use();
-	//GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
-	/*VAO**/ gui = new VAO();
-	glGenVertexArrays(1, &gui->vao);
-	glGenBuffers(1, &gui->vbo[0]);
-	glBindVertexArray(gui->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
-
-	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, fbos->getRefractionTexture());
-	glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
-
-	guiShader->setFloat("scale", 0.3);
-	guiShader->setVec2("pos", glm::vec2(2, 2));
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	//this->guiShader->Use();
+	//VAO* gui = new VAO();
+	//glGenVertexArrays(1, &gui->vao);
+	//glGenBuffers(1, &gui->vbo[0]);
+	//glBindVertexArray(gui->vao);
+	//glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+	//
+	//glActiveTexture(GL_TEXTURE0 + 0);
+	//glBindTexture(GL_TEXTURE_2D, fbos->getReflectionTexture());
+	//glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
+	//
+	//guiShader->setFloat("scale", 0.3);
+	//guiShader->setVec2("pos", glm::vec2(-2, 2));
+	//
+	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	//
+	////###############################################################
+	////###########################################################################
+	//
+	//this->guiShader->Use();
+	////GLfloat positions[] = { -1,1,-1,-1,1,1,1,-1 };
+	///*VAO**/ gui = new VAO();
+	//glGenVertexArrays(1, &gui->vao);
+	//glGenBuffers(1, &gui->vbo[0]);
+	//glBindVertexArray(gui->vao);
+	//glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[0]);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(positions), &positions, GL_STATIC_DRAW);
+	//
+	//glActiveTexture(GL_TEXTURE0 + 0);
+	//glBindTexture(GL_TEXTURE_2D, fbos->getRefractionTexture());
+	//glUniform1i(glGetUniformLocation(this->guiShader->Program, "gui_Texture"), 0);
+	//
+	//guiShader->setFloat("scale", 0.3);
+	//guiShader->setVec2("pos", glm::vec2(2, 2));
+	//
+	//glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	//###############################################################
 	// 
@@ -1214,7 +1295,8 @@ void TrainView::draw()
 	glBindVertexArray(0);
 	fbos_nocube->cleanUp();
 	delete fbos_nocube;
-
+	fbos_for_caustics->cleanUp();
+	delete fbos_for_caustics;
 	fbos->cleanUp();
 	delete fbos;
 	//unbind shader(switch to fixed pipeline)
