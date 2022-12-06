@@ -114,11 +114,38 @@ void main()
     else
         Rr = refract(I, normalize(f_in.normal),0.75);
 
+    vec3 oriRr;
+    if(I.y>0)
+        oriRr = refract(I, vec3(0,-1,0),0.75);
+    else
+        oriRr = refract(I,vec3(0,1,0),0.75);
+
     vec3 Re = reflect(I, normalize(f_in.normal));
     //=====================================================================
-    vec3 refractPos = RayBoxs(f_in.position, I);
-   
-    vec4 refractClip = u_projection * u_view * vec4(refractPos, 1.0f); 
+    vec3 refractPos = RayBoxs(f_in.position, I + Rr - oriRr);
+    vec4 refractClip;
+    if (cameraPos.y > 0)
+	{
+		mat4 refract = mat4(
+		1.0,0.0,0.0,0.0,
+		0.0,0.75,0.0,0.0,
+		0.0,0.0,1.0,0.0,
+		0.0,0.0,0.0,1.0
+		);
+		refractClip= u_projection * u_view * refract * vec4(refractPos, 1.0f); 
+
+	}
+	else
+	{
+		mat4 refract= mat4(
+		1.0,0.0,0.0,0.0,
+		0.0,1.33,0.0,0.0,
+		0.0,0.0,1.0,0.0,
+		0.0,0.0,0.0,1.0
+		);
+		refractClip= u_projection * u_view * refract* vec4(refractPos, 1.0f); 
+	}
+    refractClip = u_projection * u_view * vec4(refractPos, 1.0f); 
 
     vec2 ndc = (refractClip.xy/refractClip.w)/2.0+0.5;
     vec2 refractCoord = ndc.xy;

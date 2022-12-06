@@ -1048,15 +1048,36 @@ void TrainView::draw()
 	//##############
 	//#############
 
+	glPushMatrix();
+
+	if (campos.y > 0)
+	{
+		GLfloat refract[] = {
+		1.0,0.0,0.0,0.0,
+		0.0,0.75,0.0,0.0,
+		0.0,0.0,1.0,0.0,
+		0.0,0.0,0.0,1.0,
+		};
+		glMultMatrixf(refract);
+		glTranslatef(0.0, 5.0 * 0.33, 0.0);//fucking sourse_pos
+	}
+	else
+	{
+		GLfloat refract[] = {
+		1.0,0.0,0.0,0.0,
+		0.0,1.33,0.0,0.0,
+		0.0,0.0,1.0,0.0,
+		0.0,0.0,0.0,1.0,
+		};
+		glMultMatrixf(refract);
+		glTranslatef(0.0, 5.0 * -0.33, 0.0);//fucking sourse_pos
+	}
 	setUBO();
 
 	WaterFrameBuffers* fbos_nocube = new WaterFrameBuffers();
 
-	glPushMatrix();
-
 	//glTranslatef(0.0, -5.0, 0.0);//fucking sourse_pos
 
-	setUBO();
 	fbos_nocube->bindRefractionFrameBuffer();
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
